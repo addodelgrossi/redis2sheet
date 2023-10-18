@@ -27,6 +27,8 @@ jobs:
 
     - name: Upload binaries to release
       uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}      
       with:
         upload_url: ${{ github.event.release.upload_url }}
         asset_path: ./redis2sheet_${{ matrix.goos }}-${{ matrix.goarch }}
