@@ -1,0 +1,34 @@
+name: Build Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '^1.21'  # Ajuste para a versão do Go que você deseja usar
+
+    - name: Build binary
+      run: |
+        GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o redis2sheet_${{ matrix.goos }}-${{ matrix.goarch }}
+
+    - name: Upload binaries to release
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./redis2sheet_${{ matrix.goos }}-${{ matrix.goarch }}
+        asset_name: redis2sheet_${{ matrix.goos }}-${{ matrix.goarch }}
+        asset_content_type: application/octet-stream
