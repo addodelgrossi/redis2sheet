@@ -19,3 +19,7 @@
 
 # Go workspace file
 go.work
+credentials.json
+dist/
+.vscode/
+coverage.txt
