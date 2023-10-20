@@ -19,6 +19,6 @@ go test -v -run TestPublishEvent
 ### Linux
 
 ```bash
-curl -L https://github.com/addodelgrossi/redis2sheet/releases/download/v0.0.2/redis2sheet_linux-amd64 -o redis2sheet
+curl -L https://github.com/addodelgrossi/redis2sheet/releases/download/v0.0.3/redis2sheet_linux-amd64 -o redis2sheet
 chmod +x redis2sheet
 ```
