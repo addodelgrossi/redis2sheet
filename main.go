@@ -23,6 +23,10 @@ var (
 	spreadsheetID  string
 )
 
+const (
+	dateFormule = "=EPOCHTODATE(INDIRECT(\"C\" & ROW()))-TIME(3;0;0)"
+)
+
 var ctx = context.Background()
 
 // EventData struct to store event data
@@ -177,7 +181,7 @@ func writeDataToSheet(srv *sheets.Service, spreadsheetID string, sheetName strin
 	valueRange := sheets.ValueRange{
 		MajorDimension: "ROWS",
 		Values: [][]interface{}{
-			{event.Asset, event.Position, event.Timestamp, event.Group, event.Text, event.Mode, event.Name},
+			{event.Asset, event.Position, event.Timestamp, event.Group, event.Text, event.Mode, event.Name, dateFormule},
 		},
 	}
 
