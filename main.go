@@ -16,8 +16,7 @@ import (
 )
 
 var (
-	host           string
-	port           string
+	url            string
 	password       string
 	channels       []string
 	credentialFile string
@@ -55,8 +54,7 @@ func main() {
 
 			logger.Info(
 				"using parameters",
-				"host", host,
-				"port", port,
+				"url", url,
 				"channels", channels,
 				"totalChannels", len(channels),
 				"credentialFile", credentialFile,
@@ -82,11 +80,8 @@ func main() {
 				log.Fatal(err)
 			}
 
-			client := redis.NewClient(&redis.Options{
-				Addr:     fmt.Sprintf("%s:%s", host, port),
-				Password: password,
-				DB:       0,
-			})
+			opt, _ := redis.ParseURL(url)
+			client := redis.NewClient(opt)
 
 			pubsub := client.Subscribe(channels...)
 			r, err := pubsub.Receive()
@@ -167,8 +162,7 @@ func main() {
 		},
 	}
 
-	cmd.Flags().StringVarP(&host, "host", "", "localhost", "Redis Host")
-	cmd.Flags().StringVarP(&port, "port", "p", "6379", "Redis Port")
+	cmd.Flags().StringVarP(&url, "url", "", "redis://localhost:6379", "Redis URL")
 	cmd.Flags().StringVarP(&password, "password", "w", "", "Redis Password")
 	cmd.Flags().StringSliceVarP(&channels, "channels", "c", []string{"events"}, "Redis Topic Name")
 	cmd.Flags().StringVarP(&credentialFile, "credentialFile", "f", "credentials.json", "Google Credential File")
