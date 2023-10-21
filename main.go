@@ -89,7 +89,7 @@ func main() {
 			})
 
 			pubsub := client.Subscribe(channels...)
-			_, err = pubsub.Receive()
+			r, err := pubsub.Receive()
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -99,6 +99,7 @@ func main() {
 				"client", client,
 				"pubsub", pubsub,
 				"channels", channels,
+				"received", r,
 			)
 
 			event := EventData{}
@@ -117,7 +118,7 @@ func main() {
 				)
 
 				if err := json.Unmarshal([]byte(msg.Payload), &event); err != nil {
-					logger.Info(
+					logger.Error(
 						"invalid message",
 						"payload", msg.Payload,
 						"channel", msg.Channel,
@@ -128,7 +129,7 @@ func main() {
 
 				sheetName := fmt.Sprintf("%s-%s", event.Mode, event.Name)
 				if err := ensureSheetExists(sheetsService, spreadsheetID, sheetName); err != nil {
-					logger.Info(
+					logger.Error(
 						"error get or creating sheet",
 						"sheetName", sheetName,
 						"spreadsheetID", spreadsheetID,
