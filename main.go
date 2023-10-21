@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"log/slog"
 	"os"
 
 	"github.com/go-redis/redis"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
@@ -41,20 +42,26 @@ type EventData struct {
 }
 
 func main() {
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
+
 	var rootCmd = &cobra.Command{Use: "redis2sheet"}
 	var cmd = &cobra.Command{
 		Use:   "run",
 		Short: "Using redis as a message broker to update google sheets",
 		Run: func(cmd *cobra.Command, args []string) {
 
-			log.WithFields(log.Fields{
-				"host":           host,
-				"port":           port,
-				"channels":       channels,
-				"totalChannels":  len(channels),
-				"credentialFile": credentialFile,
-				"spreadsheetID":  spreadsheetID,
-			}).Info("using parameters")
+			logger.Info(
+				"using parameters",
+				"host", host,
+				"port", port,
+				"channels", channels,
+				"totalChannels", len(channels),
+				"credentialFile", credentialFile,
+				"spreadsheetID", spreadsheetID,
+			)
 
 			if spreadsheetID == "" {
 				spreadsheetID = "Spreadsheet not set"
@@ -87,11 +94,12 @@ func main() {
 				log.Fatal(err)
 			}
 
-			log.WithFields(log.Fields{
-				"client":   client,
-				"pubsub":   pubsub,
-				"channels": channels,
-			}).Info("connected redis server")
+			logger.Info(
+				"connected redis server",
+				"client", client,
+				"pubsub", pubsub,
+				"channels", channels,
+			)
 
 			event := EventData{}
 
@@ -101,33 +109,60 @@ func main() {
 					log.Fatal(err)
 				}
 
-				log.WithFields(log.Fields{
-					"payload": msg.Payload,
-					"channel": msg.Channel,
-					"pattern": msg.Pattern,
-				}).Info("received message")
+				logger.Info(
+					"received message",
+					"payload", msg.Payload,
+					"channel", msg.Channel,
+					"pattern", msg.Pattern,
+				)
 
 				if err := json.Unmarshal([]byte(msg.Payload), &event); err != nil {
-					log.WithFields(log.Fields{
-						"payload": msg.Payload,
-						"channel": msg.Channel,
-						"pattern": msg.Pattern,
-						"error":   err,
-					}).Error("invalid message")
+					logger.Info(
+						"invalid message",
+						"payload", msg.Payload,
+						"channel", msg.Channel,
+						"pattern", msg.Pattern,
+						"error", err,
+					)
 				}
 
 				sheetName := fmt.Sprintf("%s-%s", event.Mode, event.Name)
 				if err := ensureSheetExists(sheetsService, spreadsheetID, sheetName); err != nil {
-					log.WithFields(log.Fields{
-						"sheetName":     sheetName,
-						"spreadsheetID": spreadsheetID,
-						"error":         err,
-					}).Error("error get or creating sheet")
+					logger.Info(
+						"error get or creating sheet",
+						"sheetName", sheetName,
+						"spreadsheetID", spreadsheetID,
+						"error", err,
+					)
 				}
 
-				writeDataToSheet(sheetsService, spreadsheetID, sheetName, msg.Channel, event)
+				resp, err := writeDataToSheet(sheetsService, spreadsheetID, sheetName, msg.Channel, event)
+				if err != nil {
+					logger.Error(
+						"error update sheet",
+						"channel", msg.Channel,
+						"asset", event.Asset,
+						"position", event.Position,
+						"timestamp", event.Timestamp,
+						"group", event.Group,
+						"mode", event.Mode,
+						"name", event.Name,
+						"error", err,
+					)
+				} else {
+					logger.Info(
+						"sheet updated",
+						"channel", msg.Channel,
+						"asset", event.Asset,
+						"position", event.Position,
+						"timestamp", event.Timestamp,
+						"group", event.Group,
+						"mode", event.Mode,
+						"name", event.Name,
+						"resp", resp,
+					)
+				}
 			}
-
 		},
 	}
 
@@ -177,7 +212,7 @@ func ensureSheetExists(srv *sheets.Service, spreadsheetID, sheetName string) err
 	return err
 }
 
-func writeDataToSheet(srv *sheets.Service, spreadsheetID string, sheetName string, channel string, event EventData) {
+func writeDataToSheet(srv *sheets.Service, spreadsheetID string, sheetName string, channel string, event EventData) (*sheets.AppendValuesResponse, error) {
 	valueRange := sheets.ValueRange{
 		MajorDimension: "ROWS",
 		Values: [][]interface{}{
@@ -186,29 +221,6 @@ func writeDataToSheet(srv *sheets.Service, spreadsheetID string, sheetName strin
 	}
 
 	insertDataOption := "INSERT_ROWS"
-	_, err := srv.Spreadsheets.Values.Append(spreadsheetID, sheetName, &valueRange).ValueInputOption("RAW").InsertDataOption(insertDataOption).Do()
-	if err != nil {
-
-		log.WithFields(log.Fields{
-			"channel":   channel,
-			"asset":     event.Asset,
-			"position":  event.Position,
-			"timestamp": event.Timestamp,
-			"group":     event.Group,
-			"mode":      event.Mode,
-			"name":      event.Name,
-			"error":     err,
-		}).Error("error update sheet")
-
-	} else {
-		log.WithFields(log.Fields{
-			"channel":   channel,
-			"asset":     event.Asset,
-			"position":  event.Position,
-			"timestamp": event.Timestamp,
-			"group":     event.Group,
-			"mode":      event.Mode,
-			"name":      event.Name,
-		}).Debug("sheet updated")
-	}
+	res, err := srv.Spreadsheets.Values.Append(spreadsheetID, sheetName, &valueRange).ValueInputOption("RAW").InsertDataOption(insertDataOption).Do()
+	return res, err
 }
