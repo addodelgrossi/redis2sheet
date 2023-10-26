@@ -80,6 +80,12 @@ func main() {
 				log.Fatal(err)
 			}
 
+			logger.Info("connected google sheets", "service", sheetsService)
+			_, err = sheetsService.Spreadsheets.Get(spreadsheetID).Do()
+			if err != nil {
+				log.Fatal(fmt.Sprintf("error getting spreadsheet %s", spreadsheetID), err)
+			}
+
 			opt, _ := redis.ParseURL(url)
 			client := redis.NewClient(opt)
 
@@ -123,6 +129,12 @@ func main() {
 				}
 
 				sheetName := fmt.Sprintf("%s-%s", event.Mode, event.Name)
+				logger.Info(
+					"checking exists sheet",
+					"sheetName", sheetName,
+					"spreadsheetID", spreadsheetID,
+				)
+
 				if err := ensureSheetExists(sheetsService, spreadsheetID, sheetName); err != nil {
 					logger.Error(
 						"error get or creating sheet",
@@ -216,6 +228,9 @@ func writeDataToSheet(srv *sheets.Service, spreadsheetID string, sheetName strin
 	}
 
 	insertDataOption := "INSERT_ROWS"
-	res, err := srv.Spreadsheets.Values.Append(spreadsheetID, sheetName, &valueRange).ValueInputOption("RAW").InsertDataOption(insertDataOption).Do()
+	res, err := srv.Spreadsheets.Values.Append(spreadsheetID, sheetName, &valueRange).
+		ValueInputOption("USER_ENTERED").
+		InsertDataOption(insertDataOption).
+		Do()
 	return res, err
 }
