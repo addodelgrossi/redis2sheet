@@ -14,7 +14,7 @@ func TestPublishEvent(t *testing.T) {
 
 	// Mock event data
 	event := EventData{
-		Asset:     "WIN23",
+		Asset:     "WIN",
 		Position:  2,
 		Timestamp: 987654321,
 		Group:     "test",
@@ -44,7 +44,7 @@ func TestPublishEventSlave(t *testing.T) {
 
 	// Mock event data
 	event := EventData{
-		Asset:     "WIN23",
+		Asset:     "WIN",
 		Position:  2,
 		Timestamp: 987654321,
 		Group:     "test",

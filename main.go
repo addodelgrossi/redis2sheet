@@ -33,6 +33,7 @@ var ctx = context.Background()
 type EventData struct {
 	Asset     string `json:"asset"`
 	Position  int    `json:"position"`
+	Quantity  int    `json:"quantity"`
 	Timestamp int    `json:"timestamp"`
 	Group     string `json:"group"`
 	Text      string `json:"text"`
@@ -151,6 +152,7 @@ func main() {
 						"channel", msg.Channel,
 						"asset", event.Asset,
 						"position", event.Position,
+						"quantity", event.Quantity,
 						"timestamp", event.Timestamp,
 						"group", event.Group,
 						"mode", event.Mode,
@@ -163,6 +165,7 @@ func main() {
 						"channel", msg.Channel,
 						"asset", event.Asset,
 						"position", event.Position,
+						"quantity", event.Quantity,
 						"timestamp", event.Timestamp,
 						"group", event.Group,
 						"mode", event.Mode,
@@ -223,7 +226,7 @@ func writeDataToSheet(srv *sheets.Service, spreadsheetID string, sheetName strin
 	valueRange := sheets.ValueRange{
 		MajorDimension: "ROWS",
 		Values: [][]interface{}{
-			{event.Asset, event.Position, event.Timestamp, event.Group, event.Text, event.Mode, event.Name, dateFormule},
+			{event.Asset, event.Position, event.Quantity, event.Timestamp, event.Group, event.Text, event.Mode, event.Name, dateFormule},
 		},
 	}
 

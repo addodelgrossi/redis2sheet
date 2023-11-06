@@ -26,7 +26,7 @@ chmod +x redis2sheet
 
 ## Configure Linux Services
 
-## Create user 
+## Create user
 
 ```bash
 sudo useradd -r -s /bin/false redis2sheet
@@ -37,13 +37,12 @@ sudo useradd -r -s /bin/false redis2sheet
 ```bash
 sudo mkdir -p /opt/redis2sheet/
 cd /opt/redis2sheet/
-sudo curl -L https://github.com/addodelgrossi/redis2sheet/releases/download/v0.0.3/redis2sheet_linux-amd64 -o redis2sheet_linux-amd64
+sudo curl -L https://github.com/addodelgrossi/redis2sheet/releases/download/v0.0.5/redis2sheet_linux-amd64 -o redis2sheet_linux-amd64
 sudo chmod +x redis2sheet_linux-amd64
 sudo chown -R redis2sheet:redis2sheet /opt/redis2sheet
 ```
 
 ### Create Service File
-
 
 ```bash
 cat << EOF | sudo tee -a /etc/systemd/system/redis2sheet.service
@@ -54,10 +53,10 @@ Conflicts=getty@tty1.service
 
 [Service]
 Type=simple
-ExecStart=/opt/redis2sheet/redis2sheet_linux-amd64
+ExecStart=/opt/redis2sheet/redis2sheet_linux-amd64 run --channels=events,copy --spreadsheetID 1BnsjYrPXcr_QD1kc8JTrEfF3yKLgVFqFaG-jBHhzOqI
 #StandardInput=tty-force
-StandardOutput=syslog
-StandardError=syslog
+StandardOutput=journal
+StandardError=journal
 SyslogIdentifier=redis2sheet
 User=redis2sheet
 WorkingDirectory=/opt/redis2sheet
@@ -75,18 +74,6 @@ EOF
 https://www.baeldung.com/linux/systemd-create-user-services
 https://betterprogramming.pub/unleashing-your-daemons-creating-services-on-ubuntu-731cd933e02e
 
-$ sudo systemctl daemon-reload
-$ sudo systemctl enable mydaemon
-$ sudo systemctl start  mydaemon
-$ sudo systemctl status mydaemon
-$ sudo journalctl --unit=mydaemon
-
-systemctl --user daemon-reload
-systemctl --user start redis2sheet.service
-systemctl --user enable redis2sheet.service
-journalctl --user -u user_service
-
-
 ```bash
 sudo systemctl enable redis2sheet.service
 sudo systemctl daemon-reload
@@ -102,4 +89,9 @@ apt update
 apt install sudo curl systemctl systemd
 apt install sudo curl systemd
 ```
-journalctl -u redis2sheet.service
+
+### View logs
+
+```bash
+sudo journalctl -u redis2sheet.service -f
+```
