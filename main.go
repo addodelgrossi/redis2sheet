@@ -24,7 +24,8 @@ var (
 )
 
 const (
-	dateFormule = "=EPOCHTODATE(INDIRECT(\"C\" & ROW()))-TIME(3;0;0)"
+	dateFormule       = "=EPOCHTODATE(INDIRECT(\"C\" & ROW()))-TIME(3;0;0)"
+	dateFormuleResume = "=EPOCHTODATE(INDIRECT(\"E\" & ROW()))-TIME(3;0;0)"
 )
 
 var ctx = context.Background()
@@ -129,12 +130,17 @@ func main() {
 					)
 				}
 
-				sheetName := fmt.Sprintf("%s-%s", event.Mode, event.Name)
-				logger.Info(
-					"checking exists sheet",
-					"sheetName", sheetName,
-					"spreadsheetID", spreadsheetID,
-				)
+				sheetName := "resume"
+				resume := true
+				if msg.Channel != "resume" {
+					resume = false
+					sheetName := fmt.Sprintf("%s-%s", event.Mode, event.Name)
+					logger.Info(
+						"checking exists sheet",
+						"sheetName", sheetName,
+						"spreadsheetID", spreadsheetID,
+					)
+				}
 
 				if err := ensureSheetExists(sheetsService, spreadsheetID, sheetName); err != nil {
 					logger.Error(
@@ -145,34 +151,53 @@ func main() {
 					)
 				}
 
-				resp, err := writeDataToSheet(sheetsService, spreadsheetID, sheetName, msg.Channel, event)
-				if err != nil {
-					logger.Error(
-						"error update sheet",
-						"channel", msg.Channel,
-						"asset", event.Asset,
-						"position", event.Position,
-						"quantity", event.Quantity,
-						"timestamp", event.Timestamp,
-						"group", event.Group,
-						"mode", event.Mode,
-						"name", event.Name,
-						"error", err,
-					)
+				if resume {
+					err := writeResumeToSheet(sheetsService, spreadsheetID, sheetName, msg.Channel, event)
+					if err != nil {
+						logger.Error(
+							"error update resume sheet",
+							"channel", msg.Channel,
+							"asset", event.Asset,
+							"position", event.Position,
+							"quantity", event.Quantity,
+							"timestamp", event.Timestamp,
+							"group", event.Group,
+							"mode", event.Mode,
+							"name", event.Name,
+							"error", err,
+						)
+					}
 				} else {
-					logger.Info(
-						"sheet updated",
-						"channel", msg.Channel,
-						"asset", event.Asset,
-						"position", event.Position,
-						"quantity", event.Quantity,
-						"timestamp", event.Timestamp,
-						"group", event.Group,
-						"mode", event.Mode,
-						"name", event.Name,
-						"resp", resp,
-					)
+					resp, err := writeDataToSheet(sheetsService, spreadsheetID, sheetName, msg.Channel, event)
+					if err != nil {
+						logger.Error(
+							"error update sheet",
+							"channel", msg.Channel,
+							"asset", event.Asset,
+							"position", event.Position,
+							"quantity", event.Quantity,
+							"timestamp", event.Timestamp,
+							"group", event.Group,
+							"mode", event.Mode,
+							"name", event.Name,
+							"error", err,
+						)
+					} else {
+						logger.Info(
+							"sheet updated",
+							"channel", msg.Channel,
+							"asset", event.Asset,
+							"position", event.Position,
+							"quantity", event.Quantity,
+							"timestamp", event.Timestamp,
+							"group", event.Group,
+							"mode", event.Mode,
+							"name", event.Name,
+							"resp", resp,
+						)
+					}
 				}
+
 			}
 		},
 	}
@@ -236,4 +261,43 @@ func writeDataToSheet(srv *sheets.Service, spreadsheetID string, sheetName strin
 		InsertDataOption(insertDataOption).
 		Do()
 	return res, err
+}
+
+func writeResumeToSheet(srv *sheets.Service, spreadsheetID string, sheetName string, channel string, event EventData) error {
+
+	readRange := fmt.Sprintf("%s!B:C", sheetName)
+	resp, err := srv.Spreadsheets.Values.Get(spreadsheetID, readRange).Do()
+	if err != nil {
+		return fmt.Errorf("error getting data %v", err)
+	}
+
+	var rangeToUpdate string
+	valueInputOption := "USER_ENTERED"
+	var vr sheets.ValueRange
+
+	for i, row := range resp.Values {
+		if len(row) > 1 && row[0] == event.Name && row[1] == event.Asset {
+			rangeToUpdate = fmt.Sprintf("D%d", i+1)
+			values := []interface{}{event.Position, event.Timestamp}
+			vr.Values = append(vr.Values, values)
+			_, err := srv.Spreadsheets.Values.Update(spreadsheetID, rangeToUpdate, &vr).ValueInputOption(valueInputOption).Do()
+			return err
+		}
+	}
+
+	valueRange := sheets.ValueRange{
+		MajorDimension: "ROWS",
+		Values: [][]interface{}{
+			{event.Mode, event.Name, event.Position, event.Timestamp, dateFormuleResume},
+		},
+	}
+
+	insertDataOption := "INSERT_ROWS"
+	_, err = srv.Spreadsheets.Values.Append(spreadsheetID, sheetName, &valueRange).
+		ValueInputOption("USER_ENTERED").
+		InsertDataOption(insertDataOption).
+		Do()
+
+	return err
+
 }
