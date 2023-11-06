@@ -288,7 +288,7 @@ func writeResumeToSheet(srv *sheets.Service, spreadsheetID string, sheetName str
 	valueRange := sheets.ValueRange{
 		MajorDimension: "ROWS",
 		Values: [][]interface{}{
-			{event.Mode, event.Name, event.Position, event.Timestamp, dateFormuleResume},
+			{event.Mode, event.Name, event.Asset, event.Position, event.Timestamp, dateFormuleResume},
 		},
 	}
 

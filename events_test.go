@@ -65,3 +65,33 @@ func TestPublishEventSlave(t *testing.T) {
 	sub := rdb.Subscribe(channel)
 	defer sub.Close()
 }
+
+func TestPublishEventResume(t *testing.T) {
+	rdb := redis.NewClient(&redis.Options{
+		Addr: "192.168.0.116:6379",
+		DB:   0,
+	})
+
+	// Mock event data
+	event := EventData{
+		Asset:     "WIN",
+		Position:  2,
+		Timestamp: 987654321,
+		Group:     "test",
+		Text:      "This is a test",
+		Mode:      "slave",
+		Name:      "srv01",
+	}
+
+	channel := "resume"
+
+	// Publish the event
+	err := PublishEvent(rdb, event, channel)
+	if err != nil {
+		t.Fatalf("Failed to publish event: %v", err)
+	}
+
+	// Verify the published data
+	sub := rdb.Subscribe(channel)
+	defer sub.Close()
+}
