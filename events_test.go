@@ -16,11 +16,11 @@ func TestPublishEvent(t *testing.T) {
 	event := EventData{
 		Asset:     "WIN",
 		Position:  2,
-		Timestamp: 987654321,
+		Timestamp: 987654322,
 		Group:     "test",
 		Text:      "This is a test",
 		Mode:      "server",
-		Name:      "srv01",
+		Name:      "srv02",
 	}
 
 	channel := "events"
@@ -68,7 +68,7 @@ func TestPublishEventSlave(t *testing.T) {
 
 func TestPublishEventResume(t *testing.T) {
 	rdb := redis.NewClient(&redis.Options{
-		Addr: "192.168.0.116:6379",
+		Addr: "localhost:6379",
 		DB:   0,
 	})
 

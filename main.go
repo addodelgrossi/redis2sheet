@@ -24,7 +24,7 @@ var (
 )
 
 const (
-	dateFormule       = "=EPOCHTODATE(INDIRECT(\"C\" & ROW()))-TIME(3;0;0)"
+	dateFormule       = "=EPOCHTODATE(INDIRECT(\"D\" & ROW()))-TIME(3;0;0)"
 	dateFormuleResume = "=EPOCHTODATE(INDIRECT(\"E\" & ROW()))-TIME(3;0;0)"
 )
 
@@ -134,7 +134,7 @@ func main() {
 				resume := true
 				if msg.Channel != "resume" {
 					resume = false
-					sheetName := fmt.Sprintf("%s-%s", event.Mode, event.Name)
+					sheetName = fmt.Sprintf("%s-%s", event.Mode, event.Name)
 					logger.Info(
 						"checking exists sheet",
 						"sheetName", sheetName,
