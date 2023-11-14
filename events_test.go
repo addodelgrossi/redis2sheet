@@ -45,7 +45,7 @@ func TestPublishEventSlave(t *testing.T) {
 	// Mock event data
 	event := EventData{
 		Asset:     "WIN",
-		Position:  2,
+		Position:  4,
 		Timestamp: 987654321,
 		Group:     "test",
 		Text:      "This is a test",

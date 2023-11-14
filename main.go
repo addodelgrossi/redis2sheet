@@ -21,6 +21,7 @@ var (
 	channels       []string
 	credentialFile string
 	spreadsheetID  string
+	sheetName      string
 )
 
 const (
@@ -130,17 +131,24 @@ func main() {
 					)
 				}
 
-				sheetName := "resume"
 				resume := true
+				sheetName = "resume"
 				if msg.Channel != "resume" {
 					resume = false
 					sheetName = fmt.Sprintf("%s-%s", event.Mode, event.Name)
 					logger.Info(
-						"checking exists sheet",
+						"using sheet",
 						"sheetName", sheetName,
 						"spreadsheetID", spreadsheetID,
 					)
 				}
+
+				logger.Info(
+					"processing message",
+					"sheetName", sheetName,
+					"channel", msg.Channel,
+					"resume", resume,
+				)
 
 				if err := ensureSheetExists(sheetsService, spreadsheetID, sheetName); err != nil {
 					logger.Error(
@@ -277,7 +285,7 @@ func writeResumeToSheet(srv *sheets.Service, spreadsheetID string, sheetName str
 
 	for i, row := range resp.Values {
 		if len(row) > 1 && row[0] == event.Name && row[1] == event.Asset {
-			rangeToUpdate = fmt.Sprintf("D%d", i+1)
+			rangeToUpdate = fmt.Sprintf("%s!D%d", sheetName, i+1)
 			values := []interface{}{event.Position, event.Timestamp}
 			vr.Values = append(vr.Values, values)
 			_, err := srv.Spreadsheets.Values.Update(spreadsheetID, rangeToUpdate, &vr).ValueInputOption(valueInputOption).Do()
